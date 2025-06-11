@@ -4,6 +4,7 @@
   <a href="README_ZH.md">中文</a> | <a href="README.md">English</a>
 </div>
 
+
 A lightweight multi-functional web server based on Flask, supporting dynamic script execution, file serving, and custom configuration.
 
 ## ✨ Features
@@ -138,7 +139,7 @@ This project is licensed under the GNU General Public License v3.0 (GPL-3.0). Se
 If this project helps you, feel free to buy the author a coffee! (WeChat Pay)
 
 <p align="center">
-  <img src="https://zplb.org.cn/images/pay.jpg" alt="Donation QR Code" width="300">
+  <img src="pay.jpg" alt="Donation QR Code" width="300">
 </p>
 
 <p align="center">
