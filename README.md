@@ -1,142 +1,150 @@
 # PyServe
 
-一个基于 Flask 的轻量级多功能 Web 服务器，支持动态脚本执行、文件服务和自定义配置。
+<div align="left">
+  <a href="README_ZH.md">中文</a> | <a href="README.md">English</a>
+</div>
 
-## ✨ 功能特性
+A lightweight multi-functional web server based on Flask, supporting dynamic script execution, file serving, and custom configuration.
 
-### 🌐 核心功能
-- **静态文件服务**：支持多种文件类型的 HTTP 服务
-- **目录浏览**：可配置的目录列表功能
-- **动态脚本支持**：
-  - **Python 脚本 (.pys)**：内嵌 Python 代码执行
-  - **PHP 支持**：通过 PHP-CGI 执行 PHP 脚本
-- **自定义错误页面**：支持自定义 HTTP 错误页面
-- **请求日志**：按日期记录所有 HTTP 请求
+## ✨ Features
 
-## 📋 系统需求
+### 🌐 Core Functions
+- **Static File Serving**: HTTP service supporting various file types
+- **Directory Browsing**: Configurable directory listing functionality
+- **Dynamic Script Support**:
+  - **Python Scripts (.pys)**: Embedded Python code execution
+  - **PHP Support**: Execute PHP scripts through PHP-CGI
+- **Custom Error Pages**: Support for custom HTTP error pages
+- **Request Logging**: Log all HTTP requests by date
+
+## 📋 System Requirements
 
 - Python 3.8+
 - Flask
 - colorama
-- PHP-CGI（如需 PHP 支持）
+- PHP-CGI (for PHP support)
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 pip install flask colorama
 ```
 
-### 2. 项目结构
+### 2. Project Structure
 
 ```
 PyServe/
-├── PyServe.py      # 主程序文件
+├── PyServe.py      # Main program file
 ├── config/
-│   └── config.cfg      # 配置文件
-├── WWW/                # Web 根目录
-│   └── error/          # 错误页面目录
+│   └── config.cfg      # Configuration file
+├── WWW/                # Web root directory
+│   └── error/          # Error pages directory
 │       ├── 404.html
 │       └── ...
-├── PHP/                # PHP 相关文件
-│   └── php-cgi.exe     # PHP-CGI 执行文件
-└── log/                # 日志目录
+├── PHP/                # PHP related files
+│   └── php-cgi.exe     # PHP-CGI executable
+└── log/                # Log directory
 ```
 
-### 3. 运行服务器
+### 3. Run the Server
 
 ```bash
 python PyServe.py
 ```
 
-服务器默认在 80 端口启动，访问 http://localhost 即可。
+The server starts on port 80 by default. Visit http://localhost to access.
 
-## ⚙️ 配置说明
+## ⚙️ Configuration
 
-编辑 `config/config.cfg` 文件来自定义服务器行为：
+Edit the `config/config.cfg` file to customize server behavior:
 
 ```python
-# 基础配置
-Config.PORT = 80                  # 服务器端口
-Config.ENCODING = 'utf-8'         # 文件编码
-Config.WWW_ROOT = './WWW'         # Web 根目录
-Config.ERROR_DIR = '/error'       # 错误页面目录
-Config.DIR_LISTING = False        # 是否启用目录列表
-Config.LOG_DIR = './log'          # 日志文件目录
+# Basic Configuration
+Config.PORT = 80                  # Server port
+Config.ENCODING = 'utf-8'         # File encoding
+Config.WWW_ROOT = './WWW'         # Web root directory
+Config.ERROR_DIR = '/error'       # Error pages directory
+Config.DIR_LISTING = False        # Enable directory listing
+Config.LOG_DIR = './log'          # Log files directory
 
-# PHP 配置
-Config.PHP_CGI_PATH = "./PHP/php-cgi"  # PHP-CGI 路径
+# PHP Configuration
+Config.PHP_CGI_PATH = "./PHP/php-cgi"  # PHP-CGI path
 ```
 
-## 🎯 使用示例
+## 🎯 Usage Examples
 
-### Python 动态页面 (.pys)
+### Python Dynamic Pages (.pys)
 
-创建 `WWW/index.pys` 文件：
+Create `WWW/index.pys` file:
 
 ```html
 <!DOCTYPE html>
 <html>
 <body>
-    <h1>欢迎访问 PyServe</h1>
+    <h1>Welcome to PyServe</h1>
     <python>
-echo("<p>当前时间：" + str(datetime.datetime.now()) + "</p>")
-echo("<p>您的 IP 地址：" + remote_addr() + "</p>")
+echo("<p>Current time: " + str(datetime.datetime.now()) + "</p>")
+echo("<p>Your IP address: " + remote_addr() + "</p>")
     </python>
 </body>
 </html>
 ```
 
-### 可用的 Python 函数
+### Available Python Functions
 
-在 .pys 文件中可以使用以下内置函数：
+The following built-in functions are available in .pys files:
 
-- `print()` - 即支持直接输出 HTML，也支持输出到控制台
-- `echo()` - 直接输出 HTML
-- `h1()` ~ `h6()` - 输出标题标签
-- `p()` - 输出段落标签
-- `get()` - 获取 GET 参数
-- `post()` - 获取 POST 参数
-- `remote_addr()` - 获取访客 IP 地址
-- `headers()` - 获取请求头信息
-- `get_file()` - 处理文件上传
+- `print()` - Supports both HTML output and console output
+- `echo()` - Direct HTML output
+- `h1()` ~ `h6()` - Output heading tags
+- `p()` - Output paragraph tags
+- `get()` - Get GET parameters
+- `post()` - Get POST parameters
+- `remote_addr()` - Get visitor IP address
+- `headers()` - Get request headers
+- `get_file()` - Handle file uploads
 
-## 🔒 安全考虑
+## 🔒 Security Considerations
 
-1. **沙箱执行**：Python 代码在受限环境中执行
-2. **函数限制**：可以通过 `DISABLE_PYTHON_FUNCTIONS` 禁用特定函数
-3. **库控制**：仅允许使用 `ENABLE_PYTHON_LIBRARIES` 中指定的库
-4. **文件访问**：限制在 WWW_ROOT 目录内
+1. **Sandbox Execution**: Python code executes in a restricted environment
+2. **Function Restrictions**: Disable specific functions via `DISABLE_PYTHON_FUNCTIONS`
+3. **Library Control**: Only libraries specified in `ENABLE_PYTHON_LIBRARIES` are allowed
+4. **File Access**: Restricted within WWW_ROOT directory
 
-## 📝 日志记录
+## 📝 Logging
 
-服务器会在 `log/` 目录下按日期创建日志文件，记录格式：
+The server creates log files by date in the `log/` directory with the following format:
 
 ```
 {'timestamp': '2025-01-09T10:30:45', 'ip': '127.0.0.1', 'method': 'GET', 'path': '/', ...}
 ```
 
-## 🤝 贡献指南
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Welcome to submit Issues and Pull Requests!
 
-## 📄 许可证
+## 📄 License
 
-本项目采用 GNU General Public License v3.0 (GPL-3.0) 许可证。详见 [LICENSE](LICENSE) 文件。
+This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See [LICENSE](LICENSE) file for details.
 
-## 👤 作者
+## 👤 Author
 
 - **zplbFelix**
 
-## ☕ 支持作者
+## ☕ Support the Author
 
-如果这个项目对你有帮助，欢迎请作者喝杯咖啡！
+If this project helps you, feel free to buy the author a coffee! (WeChat Pay)
 
 <p align="center">
-  <img src="pay.jpg" alt="打赏二维码" width="300">
+  <img src="https://zplb.org.cn/images/pay.jpg" alt="Donation QR Code" width="300">
 </p>
 
 <p align="center">
-  <strong>感谢你的支持！</strong> 🙏
+  <i>Scan to donate. Your support is my motivation for continuous development!</i>
+</p>
+
+<p align="center">
+  <strong>Thank you for your support!</strong> 🙏
 </p>
