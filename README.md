@@ -134,7 +134,7 @@ echo("<p>您的 IP 地址：" + remote_addr() + "</p>")
 如果这个项目对你有帮助，欢迎请作者喝杯咖啡！
 
 <p align="center">
-  <img src="http://zplb.top/images/pay.jpg" alt="打赏二维码" width="300">
+  <img src="pay.jpg" alt="打赏二维码" width="300">
 </p>
 
 <p align="center">
