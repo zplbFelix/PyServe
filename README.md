@@ -1,4 +1,4 @@
-# PyServe
+# <img src="pyserve.png" alt="icon" width="50" align="center"> PyServe
 
 <div align="left">
   <a href="README_ZH.md">中文</a> | <a href="README.md">English</a>
