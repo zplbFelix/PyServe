@@ -77,7 +77,9 @@ Config.PHP_CGI_PATH = "./PHP/php-cgi"  # PHP-CGI 路径
 
 ## 🎯 使用示例
 
-### Python 动态页面 (.pys)
+### 动态页面支持
+
+#### Python 脚本 (.pys)
 
 创建 `WWW/index.pys` 文件：
 
@@ -89,6 +91,26 @@ Config.PHP_CGI_PATH = "./PHP/php-cgi"  # PHP-CGI 路径
     <python>
 echo("<p>当前时间：" + str(datetime.datetime.now()) + "</p>")
 echo("<p>您的 IP 地址：" + remote_addr() + "</p>")
+    </python>
+</body>
+</html>
+```
+
+#### PHP+Python 混合文件 (.pp)
+
+创建 `WWW/index.pp` 文件，可以同时包含 PHP 和 Python 代码：
+
+```html
+<!DOCTYPE html>
+<html>
+<body>
+    <?php
+        echo "<h1>PHP 生成的内容</h1>";
+        echo "<p>服务器时间：".date('Y-m-d H:i:s')."</p>";
+    ?>
+    
+    <python>
+echo("<p>Python 说：当前时间戳是 " + str(time.time()) + "</p>")
     </python>
 </body>
 </html>

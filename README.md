@@ -77,7 +77,9 @@ Config.PHP_CGI_PATH = "./PHP/php-cgi"  # PHP-CGI path
 
 ## 🎯 Usage Examples
 
-### Python Dynamic Pages (.pys)
+### Dynamic Pages Support
+
+#### Python Scripts (.pys)
 
 Create `WWW/index.pys` file:
 
@@ -89,6 +91,26 @@ Create `WWW/index.pys` file:
     <python>
 echo("<p>Current time: " + str(datetime.datetime.now()) + "</p>")
 echo("<p>Your IP address: " + remote_addr() + "</p>")
+    </python>
+</body>
+</html>
+```
+
+#### PHP+Python Hybrid Files (.pp)
+
+Create `WWW/index.pp` file that can contain both PHP and Python code:
+
+```html
+<!DOCTYPE html>
+<html>
+<body>
+    <?php
+        echo "<h1>PHP Generated Content</h1>";
+        echo "<p>Server time: ".date('Y-m-d H:i:s')."</p>";
+    ?>
+    
+    <python>
+echo("<p>Python says: Current timestamp is " + str(time.time()) + "</p>")
     </python>
 </body>
 </html>

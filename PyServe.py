@@ -33,7 +33,7 @@ class Config:
     LOG_DIR = './log'
 
     # File type categories
-    HTML_EXTENSIONS = ['html', 'htm', 'pys', 'php']
+    HTML_EXTENSIONS = ['html', 'htm', 'pys', 'php', 'pp']
     IMAGE_EXTENSIONS = ['bmp', 'gif', 'jpg', 'png', 'jpeg', 'webp', 'svg', 'ico', 'tif', 'tiff']
     VIDEO_EXTENSIONS = ['mp4', 'webm', 'avi', 'mov', 'wmv', 'flv', 'mkv']
     AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a']
@@ -424,7 +424,6 @@ def run_php(filepath):
         else:
             headers = b''
             body = output
-
         response = Response(body)
 
         if headers:
@@ -436,13 +435,21 @@ def run_php(filepath):
 
         if 'Content-Type' not in response.headers:
             response.headers['Content-Type'] = 'text/html; charset=utf-8'
-
-        return response
+        
+        return response, body.decode()
 
     except Exception as e:
         app.logger.error(f"Server Error: {str(e)}")
         return f"Server Error: {str(e)}", 500
 
+
+# ================
+# pp File
+# ================
+
+def run_pp(file_path):
+    html = run_php(file_path)[1]
+    return extract_all_python_tags(html)[1]
 
 # ================
 # Helper Functions
@@ -584,7 +591,9 @@ def serve(path):
                         html_content = f.read()
                     return extract_all_python_tags(html_content)[1]
                 if index_file == 'php':
-                    return run_php(index_path)
+                    return run_php(index_path)[1]
+                if index_file == 'pp':
+                    return run_pp(index_path)
                 return serve_file(index_path, 'text/html')
         # Generate directory listing if no index file found
         return generate_directory_listing(fs_path, '/' + path)
@@ -599,7 +608,9 @@ def serve(path):
                     html_content = f.read()
                 return extract_all_python_tags(html_content)[1]
             if ext == 'php':
-                return run_php(fs_path)
+                return run_php(fs_path)[1]
+            if ext == 'pp':
+                return run_pp(fs_path)
             return serve_file(fs_path, 'text/html')
 
         # Images
