@@ -31,6 +31,10 @@ class Config:
     ERROR_DIR = '/error'
     DIR_LISTING = False
     LOG_DIR = './log'
+    
+    # Large file download settings
+    LARGE_FILE_THRESHOLD = 50 * 1024 * 1024  # 50MB threshold for streaming
+    CHUNK_SIZE = 64 * 1024  # 64KB chunks for streaming
 
     # File type categories
     HTML_EXTENSIONS = ['html', 'htm', 'pys', 'php', 'pp']
@@ -482,6 +486,46 @@ def serve_file(path, content_type, as_attachment=False):
     return response
 
 
+def serve_large_file(path, content_type, as_attachment=False):
+    """Serve large files using streaming to avoid memory issues"""
+    try:
+        # Get file size for Content-Length header
+        file_size = os.path.getsize(path)
+        
+        # Check if we should use streaming based on file size
+        if file_size < Config.LARGE_FILE_THRESHOLD:
+            # For smaller files, use the regular function
+            return serve_file(path, content_type, as_attachment)
+        
+        # For large files, use streaming
+        def generate():
+            with open(path, 'rb') as f:
+                while True:
+                    chunk = f.read(Config.CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    yield chunk
+        
+        response = Response(
+            generate(),
+            mimetype=content_type,
+            direct_passthrough=True
+        )
+        
+        # Set headers
+        response.headers['Content-Length'] = file_size
+        response.headers['Accept-Ranges'] = 'bytes'
+        
+        if as_attachment:
+            filename = os.path.basename(path)
+            response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except IOError:
+        return serve_error_page(404)
+
+
 def serve_error_page(status_code):
     """Serve appropriate error page"""
     error_page = (Config.WWW_ROOT+os.path.join(Config.ERROR_DIR.replace('\\','/'), f'{status_code}.html')).replace('\\','/')
@@ -615,29 +659,29 @@ def serve(path):
 
         # Images
         elif ext in Config.IMAGE_EXTENSIONS:
-            return serve_file(fs_path, Config.MIME_TYPES.get(ext, 'image/' + ext))
+            return serve_large_file(fs_path, Config.MIME_TYPES.get(ext, 'image/' + ext))
 
         # Videos
         elif ext in Config.VIDEO_EXTENSIONS:
-            return serve_file(fs_path, Config.MIME_TYPES.get(ext, 'video/' + ext))
+            return serve_large_file(fs_path, Config.MIME_TYPES.get(ext, 'video/' + ext))
 
         # Audio
         elif ext in Config.AUDIO_EXTENSIONS:
-            return serve_file(fs_path, Config.MIME_TYPES.get(ext, 'audio/' + ext))
+            return serve_large_file(fs_path, Config.MIME_TYPES.get(ext, 'audio/' + ext))
 
         # Fonts
         elif ext in Config.FONT_EXTENSIONS:
-            return serve_file(fs_path, Config.MIME_TYPES.get(ext, 'application/octet-stream'))
+            return serve_large_file(fs_path, Config.MIME_TYPES.get(ext, 'application/octet-stream'))
 
         # Downloadable files
         elif ext in Config.DOWNLOAD_EXTENSIONS:
-            return serve_file(fs_path, Config.MIME_TYPES.get(ext, 'application/octet-stream'), as_attachment=True)
+            return serve_large_file(fs_path, Config.MIME_TYPES.get(ext, 'application/octet-stream'), as_attachment=True)
 
         # Other files
         else:
             # Try to determine MIME type or fall back to octet-stream
             mime_type = Config.MIME_TYPES.get(ext, 'application/octet-stream')
-            return serve_file(fs_path, mime_type)
+            return serve_large_file(fs_path, mime_type)
 
     # File not found
     return serve_error_page(404)
