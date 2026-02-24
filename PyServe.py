@@ -14,6 +14,8 @@ from flask import Flask, request, make_response, Response
 import colorama
 import sys
 import subprocess
+import html
+import ast
 
 # Initialize colorama for colored console output
 colorama.init()
@@ -31,6 +33,8 @@ class Config:
     ERROR_DIR = '/error'
     DIR_LISTING = False
     LOG_DIR = './log'
+    LOG_RETENTION_DAYS = None
+    CONFIG_DIR = "./config"
     
     # Large file download settings
     LARGE_FILE_THRESHOLD = 50 * 1024 * 1024  # 50MB threshold for streaming
@@ -120,8 +124,10 @@ class Config:
 
 
 # Try to load custom configuration
+if len(sys.argv) > 1:
+    Config.CONFIG_DIR = sys.argv[1]
 try:
-    config_path = os.path.join('config', 'config.cfg')
+    config_path = os.path.join(Config.CONFIG_DIR, 'config.cfg')
     if os.path.exists(config_path):
         with open(config_path, 'r', encoding='utf-8') as config_file:
             exec(config_file.read())
@@ -130,6 +136,17 @@ try:
         print(colorama.Fore.YELLOW + 'No config file found, using defaults')
 except Exception as e:
     print(colorama.Fore.RED + f'Error loading config: {str(e)}\nUsing default configuration')
+
+try:
+    config_path = os.path.join(Config.CONFIG_DIR, 'function.py')
+    if os.path.exists(config_path):
+        with open(config_path, 'r', encoding='utf-8') as config_file:
+            function_config = config_file.read()
+        print(colorama.Fore.GREEN + 'Function loaded successfully')
+    else:
+        print(colorama.Fore.YELLOW + 'No Function file found, using defaults')
+except Exception as e:
+    print(colorama.Fore.RED + f'Error loading Function: {str(e)}')
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -147,219 +164,230 @@ print(colorama.Fore.RESET)
 # Python Interpreter
 # ================
 
-def extract_all_python_tags(html):
-    """Extract the content of all<python>tags from HTML and execute"""
-    def run_python(text):
-        try:
-            content = ''
-            def new_print(*args, sep=' ', end='\n', file=None, flush=False, output=False):
-                nonlocal content
-                output_file = file if file is not None else sys.stdout
-                text = sep.join(str(arg) for arg in args)
-                if output:
-                    output_file.write(text + end)
-                    if flush:
-                        output_file.flush()
-                content += text
-            def new_echo(text):
-                nonlocal content
-                content += text
-            def new_h1(text):
-                nonlocal content
-                content += '<h1>' + html.escape(text) + '</h1>'
-            def new_h2(text):
-                nonlocal content
-                content += '<h2>' + html.escape(text) + '</h2>'
-            def new_h3(text):
-                nonlocal content
-                content += '<h3>' + html.escape(text) + '</h3>'
-            def new_h4(text):
-                nonlocal content
-                content += '<h4>' + html.escape(text) + '</h4>'
-            def new_h5(text):
-                nonlocal content
-                content += '<h5>' + html.escape(text) + '</h5>'
-            def new_h6(text):
-                nonlocal content
-                content += '<h6>' + html.escape(text) + '</h6>'
-            def new_p(text):
-                nonlocal content
-                content += '<p>' + html.escape(text) + '</p>'
-            def new_get(text):
-                return request.args.get(text)
-            def new_post(text):
-                return request.form.get(text)
-            def new_remote_addr():
-                cloudflare_ip = request.headers.get('CF-Connecting-IP')
-                if cloudflare_ip:
-                    visitor_ip = cloudflare_ip
-                else:
-                    x_forwarded_for = request.headers.get('X-Forwarded-For')
-                    if x_forwarded_for:
-                        visitor_ip = x_forwarded_for.split(',')[0].strip()
-                    else:
-                        visitor_ip = request.remote_addr
-                return visitor_ip
-            def new_headers():
-                header = str(request.headers).strip().split('\n')
-                headers = {}
-                for i in header:
-                    headers[i.split(':')[0].strip()] = ':'.join(i.split(':')[1:]).strip()
-                return headers
-            def new_get_file(text, path):
-                file = request.files.get(text)
-                file.save(Config.WWW_ROOT.replace('\\','/') + '/' + str(path).replace('\\', '/'))
-
-            def ERROR(*args,**kwargs):
-                raise NameError('This function has been disabled')
-            exec_scope = {'__builtins__': __builtins__}
-            new = {'print': new_print, 'echo': new_echo,
-                   'h1': new_h1, 'h2': new_h2, 'h3': new_h3, 'h4': new_h4, 'h5': new_h5, 'h6': new_h6, 'p': new_p,
-                   'get': new_get, 'post': new_post, 'remote_addr': new_remote_addr, 'headers': new_headers, 'get_file': new_get_file}
-            for i in new:
-                if i in Config.DISABLE_PYTHON_FUNCTIONS:
-                    continue
-                exec_scope[i] = new[i]
-            for func in Config.DISABLE_PYTHON_FUNCTIONS:
-                exec_scope[func] = ERROR
-            for i in Config.ENABLE_PYTHON_LIBRARIES:
-                try:
-                    exec_scope[i] = __import__(i)
-                except:
-                    continue
-            exec(text, exec_scope)
-        except Exception as e:
-            error_msg = html.escape(str(e))
-            content = f'<span class="python-error">{error_msg}</span>'
-        return content
-
-    i = 0
-    depth = 0
-    results = []
-    current_content = []
-    in_tag = False
-    in_string = None
-    escape_next = False
-    new_html_parts = []
-    last_index = 0
-    while i < len(html):
-        char = html[i]
-        if escape_next:
-            if in_tag and depth > 0:
-                current_content.append(char)
-            escape_next = False
-            i += 1
-            continue
-        if in_string:
-            if in_tag and depth > 0:
-                current_content.append(char)
-            if char == '\\':
-                escape_next = True
-            elif char == in_string[0]:
-                if in_string in ("'''", '"""'):
-                    if i + 2 < len(html) and html[i:i + 3] == in_string:
-                        if in_tag and depth > 0:
-                            current_content.append(html[i + 1])
-                            current_content.append(html[i + 2])
-                        in_string = None
-                        i += 3
-                        continue
-                else:
-                    in_string = None
-            i += 1
-            continue
-        if char == '<' and i + 4 < len(html) and html[i:i + 4] == '<!--':
-            j = i + 4
-            while j < len(html) and html[j:j + 3] != '-->':
-                j += 1
-            if j + 3 <= len(html) and html[j:j + 3] == '-->':
-                i = j + 3
-                continue
-            else:
-                i = j
-                continue
-        if char == '<':
-            if i + 1 < len(html) and html[i + 1] == '/':
-                j = i + 2
-                while j < len(html) and html[j] not in ('>', ' ', '\t', '\n', '\r'):
-                    j += 1
-                tag = html[i + 2:j].lower()
-                k = j
-                while k < len(html) and html[k] != '>':
-                    k += 1
-                if tag == 'python':
-                    if depth > 0:
-                        depth -= 1
-                        if depth == 0 and in_tag:
-                            content = ''.join(current_content).strip()
-                            content = run_python(content)
-                            results.append(content)
-                            current_content = []
-                            in_tag = False
-                            new_html_parts.append(content)
-                            last_index = k + 1
-                i = k + 1 if k < len(html) else i + 1
-                continue
-            else:
-                start_tag_index = i
-                j = i + 1
-                while j < len(html) and html[j] not in ('>', ' ', '\t', '\n', '\r', '/'):
-                    j += 1
-                tag = html[i + 1:j].lower()
-                self_closing = False
-                k = j
-                while k < len(html) and html[k] != '>':
-                    if html[k] == '/' and (k + 1 < len(html) and html[k + 1] == '>'):
-                        self_closing = True
-                    k += 1
-                if k < len(html) and html[k] == '>':
-                    end_tag_index = k + 1
-                    if tag == 'python':
-                        if self_closing:
-                            results.append('')
-                            new_html_parts.append(html[last_index:start_tag_index])
-                            last_index = end_tag_index
-                        else:
-                            if depth == 0:
-                                in_tag = True
-                                new_html_parts.append(html[last_index:start_tag_index])
-                                last_index = end_tag_index
-                            depth += 1
-                    i = end_tag_index
-                else:
-                    i = k
-                continue
-        if char in ("'", '"'):
-            if i + 2 < len(html) and html[i:i + 3] == char * 3:
-                in_string = char * 3
-                if in_tag and depth > 0:
-                    current_content.append(char)
-                    current_content.append(char)
-                    current_content.append(char)
-                i += 3
-                continue
-            else:
-                in_string = char
-                if in_tag and depth > 0:
-                    current_content.append(char)
+def extract_python_tags(html_content):
+    """
+    从HTML中提取内容，返回 [("html", ...), ("python", ...), ...] 格式的列表
+    """
+    def _find_tag_end(html_content, start):
+        i = start
+        length = len(html_content)
+        while i < length:
+            c = html_content[i]
+            if c == '>':
+                return i
+            elif c in ('"', "'"):
+                quote = c
                 i += 1
+                while i < length:
+                    ch = html_content[i]
+                    if ch == quote:
+                        break
+                    i += 1
+            i += 1
+        return -1
+    def _find_raw_text_end(html_content, i, end_tag):
+        length = len(html_content)
+        end_tag_len = len(end_tag)
+        in_string = False
+        string_char = None
+        while i < length:
+            c = html_content[i]
+            if in_string:
+                if c == '\\':
+                    i += 2
+                    continue
+                if c == string_char:
+                    in_string = False
+            else:
+                if html_content[i:i + end_tag_len].lower() == end_tag:
+                    return i
+                if c in ('"', "'", '`'):
+                    in_string = True
+                    string_char = c
+            i += 1
+        return -1
+    results = []
+    i = 0
+    length = len(html_content)
+    in_comment = False
+    in_script = False
+    in_style = False
+    in_cdata = False
+    in_python_tag = False
+    python_start = -1
+    python_depth = 0
+    html_start = 0
+    def flush_html(end):
+        """将 [html_start, end) 范围内的 HTML 内容追加到结果"""
+        nonlocal html_start
+        chunk = html_content[html_start:end]
+        if chunk:
+            results.append(("html", chunk))
+        html_start = end
+    while i < length:
+        if in_cdata:
+            if html_content[i:i + 3] == ']]>':
+                in_cdata = False
+                i += 3
+            else:
+                i += 1
+            continue
+        if html_content[i:i + 9] == '<![CDATA[':
+            in_cdata = True
+            i += 9
+            continue
+        if in_script:
+            end_pos = _find_raw_text_end(html_content, i, '</script>')
+            if end_pos == -1:
+                break
+            in_script = False
+            i = end_pos + 9
+            continue
+        if in_style:
+            end_pos = _find_raw_text_end(html_content, i, '</style>')
+            if end_pos == -1:
+                break
+            in_style = False
+            i = end_pos + 8
+            continue
+        if not in_comment and html_content[i:i + 4] == '<!--':
+            in_comment = True
+            i += 4
+            continue
+        if in_comment and html_content[i:i + 3] == '-->':
+            in_comment = False
+            i += 3
+            continue
+        if in_comment:
+            i += 1
+            continue
+        if not in_script and not in_python_tag and i + 7 <= length:
+            tag_check = html_content[i:i + 7].lower()
+            if tag_check == '<script' and (
+                i + 7 >= length or html_content[i + 7] in ' \t\n\r>/'):
+                close = _find_tag_end(html_content, i + 7)
+                if close != -1:
+                    in_script = True
+                    i = close + 1
+                else:
+                    i += 1
                 continue
-        if in_tag and depth > 0:
-            current_content.append(char)
+        if not in_style and not in_python_tag and i + 6 <= length:
+            tag_check = html_content[i:i + 6].lower()
+            if tag_check == '<style' and (
+                i + 6 >= length or html_content[i + 6] in ' \t\n\r>/'):
+                close = _find_tag_end(html_content, i + 6)
+                if close != -1:
+                    in_style = True
+                    i = close + 1
+                else:
+                    i += 1
+                continue
+        if i + 8 <= length and html_content[i:i + 8].lower() == '<python>':
+            if not in_python_tag:
+                flush_html(i)
+                html_start = i + 8
+                in_python_tag = True
+                python_start = i + 8
+                python_depth = 1
+            else:
+                python_depth += 1
+            i += 8
+            continue
+        if in_python_tag and i + 9 <= length:
+            if html_content[i:i + 9].lower() == '</python>':
+                python_depth -= 1
+                if python_depth == 0:
+                    content = html_content[python_start:i]
+                    results.append(("python", content))
+                    in_python_tag = False
+                    python_start = -1
+                    html_start = i + 9
+                i += 9
+                continue
         i += 1
-    if in_tag and depth > 0 and current_content:
-        content = ''.join(current_content).strip()
-        results.append(content)
-        content = run_python(content)
-        new_html_parts.append(content)
-    if last_index < len(html):
-        new_html_parts.append(html[last_index:])
-    new_html = ''.join(new_html_parts)
-    return (results, new_html)
+    if in_python_tag:
+        results.append(("python", f'echo("<span class="python-warning">Unclosed <python> tag detected (depth={python_depth}), content discarded.</span>")'))
+    else:
+        flush_html(length)
+    return results
+
+def run_python(text, exec_scope=None):
+    try:
+        content = ''
+        if exec_scope is None:
+            exec_scope = {'__builtins__': __builtins__}
+        elif '__builtins__' not in exec_scope:
+            exec_scope['__builtins__'] = __builtins__
+
+        def new_print(*args, sep=' ', end='\n', file=None, flush=False, output=False):
+            nonlocal content
+            output_file = file if file is not None else sys.stdout
+            text = sep.join(str(arg) for arg in args)
+            if output:
+                output_file.write(text + end)
+                if flush:
+                    output_file.flush()
+            content += text
+        def new_echo(text):
+            nonlocal content
+            content += str(text)
+
+        def ERROR(*args, **kwargs):
+            raise NameError('This function has been disabled')
+
+        func_dict = {}
+        try:
+            exec(function_config)
+            tree = ast.parse(function_config)
+            func_names = [node.name for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)]
+            func_dict = ""
+            for func in func_names:
+                func_dict += f'"{func}": {func}, '
+            func_dict = f"{{{func_dict[:-2]}}}"
+            func_dict = eval(func_dict)
+        except:
+            print(colorama.Fore.RED + 'Function execution failed')
+        new = {'print': new_print, 'echo': new_echo}
+        for func in func_dict:
+            new[func] = func_dict[func]
+
+        for i in new:
+            if i in Config.DISABLE_PYTHON_FUNCTIONS:
+                continue
+            exec_scope[i] = new[i]
+        for func in Config.DISABLE_PYTHON_FUNCTIONS:
+            exec_scope[func] = ERROR
+        for i in Config.ENABLE_PYTHON_LIBRARIES:
+            try:
+                exec_scope[i] = __import__(i)
+            except:
+                continue
+
+        exec(text, exec_scope)
+    except Exception as e:
+        error_msg = html.escape(str(e))
+        content = f'<span class="python-error">{error_msg}</span>'
+    return content, exec_scope  # 同时返回 exec_scope 供下一个块使用
+
+
+def extract_all_python_tags(html):
+    """Extract the content of all <python> tags from HTML and execute"""
+    parse = extract_python_tags(html)
+    text = ""
+    shared_scope = None
+    for s in parse:
+        if s[0] == "html":
+            text += s[1]
+        elif s[0] == "python":
+            result, shared_scope = run_python(s[1], shared_scope)
+            text += result
+    return text
 
 # ================
 # PHP Interpreter
 # ================
+
 
 def run_php(filepath):
     filepath = filepath.replace('\\','/')
@@ -453,7 +481,7 @@ def run_php(filepath):
 
 def run_pp(file_path):
     html = run_php(file_path)[1]
-    return extract_all_python_tags(html)[1]
+    return extract_all_python_tags(html)
 
 # ================
 # Helper Functions
@@ -583,6 +611,21 @@ def generate_directory_listing(path, url_path):
 """
     return listing
 
+def cleanup_old_logs(days=3):
+    """Delete log files older than `days` days"""
+    now = datetime.datetime.now()
+    cutoff = now - datetime.timedelta(days=days)
+    if os.path.exists(Config.LOG_DIR):
+        for filename in os.listdir(Config.LOG_DIR):
+            file_path = os.path.join(Config.LOG_DIR, filename)
+            try:
+                log_date_str = filename.replace(".log", "")
+                log_date = datetime.datetime.strptime(log_date_str, "%Y-%m-%d")
+                if log_date < cutoff:
+                    os.remove(file_path)
+                    print(f"Deleted old log: {file_path}")
+            except Exception as e:
+                print(f"Skipping {filename}: {e}")
 
 def log_request():
     """Log request details to file and console"""
@@ -607,6 +650,10 @@ def log_request():
 
     with open(log_file, 'a', encoding=Config.ENCODING) as f:
         f.write(log_str + '\n')
+
+    # 每次写日志时顺便清理旧日志
+    if Config.LOG_RETENTION_DAYS:
+        cleanup_old_logs(days=Config.LOG_RETENTION_DAYS)
 
 
 # ================
@@ -633,7 +680,7 @@ def serve(path):
                 if index_file == 'pys':
                     with open(index_path, 'r', encoding=Config.ENCODING) as f:
                         html_content = f.read()
-                    return extract_all_python_tags(html_content)[1]
+                    return extract_all_python_tags(html_content)
                 if index_file == 'php':
                     return run_php(index_path)[1]
                 if index_file == 'pp':
@@ -650,7 +697,7 @@ def serve(path):
             if ext == 'pys':
                 with open(fs_path, 'r', encoding=Config.ENCODING) as f:
                     html_content = f.read()
-                return extract_all_python_tags(html_content)[1]
+                return extract_all_python_tags(html_content)
             if ext == 'php':
                 return run_php(fs_path)[1]
             if ext == 'pp':
