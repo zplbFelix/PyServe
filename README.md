@@ -18,6 +18,7 @@ A lightweight multi-functional web server based on Flask, supporting dynamic scr
   - **PHP Support**: Execute PHP scripts through PHP-CGI
 - **Custom Error Pages**: Support for custom HTTP error pages
 - **Request Logging**: Log all HTTP requests by date
+- **Automatic Log Cleanup**: Delete old logs based on retention days
 
 ## 📋 System Requirements
 
@@ -70,9 +71,27 @@ Config.WWW_ROOT = './WWW'         # Web root directory
 Config.ERROR_DIR = '/error'       # Error pages directory
 Config.DIR_LISTING = False        # Enable directory listing
 Config.LOG_DIR = './log'          # Log files directory
+Config.LOG_RETENTION_DAYS = None  # Log retention (None disables auto-deletion)
+Config.CONFIG_DIR = "./config"    # Configuration directory
 
 # PHP Configuration
 Config.PHP_CGI_PATH = "./PHP/php-cgi"  # PHP-CGI path
+```
+
+You can also configure file type categories, MIME type mapping, and Python execution whitelist in `config.cfg`:
+
+```python
+# File type categories (extensible)
+Config.HTML_EXTENSIONS = ['html', 'htm', 'pys', 'php', 'pp']
+
+# MIME type mapping (common types are built-in; extend as needed)
+Config.MIME_TYPES.update({
+    'md': 'text/markdown'
+})
+
+# Python execution restrictions
+DISABLE_PYTHON_FUNCTIONS = []  # Disabled functions
+ENABLE_PYTHON_LIBRARIES = ['sys', 'os', 'math', 'datetime', 'time', 'json', ...]  # Allowed libraries
 ```
 
 ## 🎯 Usage Examples
@@ -118,17 +137,7 @@ echo("<p>Python says: Current timestamp is " + str(time.time()) + "</p>")
 
 ### Available Python Functions
 
-The following built-in functions are available in .pys files:
-
-- `print()` - Supports both HTML output and console output
-- `echo()` - Direct HTML output
-- `h1()` ~ `h6()` - Output heading tags
-- `p()` - Output paragraph tags
-- `get()` - Get GET parameters
-- `post()` - Get POST parameters
-- `remote_addr()` - Get visitor IP address
-- `headers()` - Get request headers
-- `get_file()` - Handle file uploads
+- Full technical reference: [FUNCTIONS.md](file:///d:/Users/felix/Desktop/PyServe/PyServe/FUNCTIONS.md)
 
 ## 🔒 Security Considerations
 
@@ -139,11 +148,13 @@ The following built-in functions are available in .pys files:
 
 ## 📝 Logging
 
-The server creates log files by date in the `log/` directory with the following format:
+The server creates log files by date in the `log/` directory and supports automatic cleanup of expired logs:
 
 ```
 {'timestamp': '2025-01-09T10:30:45', 'ip': '127.0.0.1', 'method': 'GET', 'path': '/', ...}
 ```
+
+- Set `Config.LOG_RETENTION_DAYS` to a positive integer (e.g., `7`) to automatically delete log files older than that number of days when writing logs.
 
 ## 🤝 Contributing
 

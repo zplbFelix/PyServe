@@ -18,6 +18,7 @@
   - **PHP 支持**：通过 PHP-CGI 执行 PHP 脚本
 - **自定义错误页面**：支持自定义 HTTP 错误页面
 - **请求日志**：按日期记录所有 HTTP 请求
+- **日志自动清理**：可按保留天数自动删除过期日志
 
 ## 📋 系统需求
 
@@ -70,9 +71,27 @@ Config.WWW_ROOT = './WWW'         # Web 根目录
 Config.ERROR_DIR = '/error'       # 错误页面目录
 Config.DIR_LISTING = False        # 是否启用目录列表
 Config.LOG_DIR = './log'          # 日志文件目录
+Config.LOG_RETENTION_DAYS = None  # 日志保留天数（None 表示不自动删除）
+Config.CONFIG_DIR = "./config"    # 配置文件目录
 
 # PHP 配置
 Config.PHP_CGI_PATH = "./PHP/php-cgi"  # PHP-CGI 路径
+```
+
+此外，你可以在 `config.cfg` 中配置文件类型分类、MIME 类型映射，以及 Python 执行白名单：
+
+```python
+# 文件类型分类（可扩展）
+Config.HTML_EXTENSIONS = ['html', 'htm', 'pys', 'php', 'pp']
+
+# MIME 类型映射（常见类型已内置，可按需扩展）
+Config.MIME_TYPES.update({
+    'md': 'text/markdown'
+})
+
+# Python 执行限制
+DISABLE_PYTHON_FUNCTIONS = []  # 禁用的函数
+ENABLE_PYTHON_LIBRARIES = ['sys', 'os', 'math', 'datetime', 'time', 'json', ...]  # 允许导入的库
 ```
 
 ## 🎯 使用示例
@@ -118,17 +137,7 @@ echo("<p>Python 说：当前时间戳是 " + str(time.time()) + "</p>")
 
 ### 可用的 Python 函数
 
-在 .pys 文件中可以使用以下内置函数：
-
-- `print()` - 即支持直接输出 HTML，也支持输出到控制台
-- `echo()` - 直接输出 HTML
-- `h1()` ~ `h6()` - 输出标题标签
-- `p()` - 输出段落标签
-- `get()` - 获取 GET 参数
-- `post()` - 获取 POST 参数
-- `remote_addr()` - 获取访客 IP 地址
-- `headers()` - 获取请求头信息
-- `get_file()` - 处理文件上传
+- 完整技术说明： [FUNCTIONS_ZH.md](file:///d:/Users/felix/Desktop/PyServe/PyServe/FUNCTIONS_ZH.md)
 
 ## 🔒 安全考虑
 
@@ -139,11 +148,13 @@ echo("<p>Python 说：当前时间戳是 " + str(time.time()) + "</p>")
 
 ## 📝 日志记录
 
-服务器会在 `log/` 目录下按日期创建日志文件，记录格式：
+服务器会在 `log/` 目录下按日期创建日志文件，并支持自动清理过期日志：
 
 ```
 {'timestamp': '2025-01-09T10:30:45', 'ip': '127.0.0.1', 'method': 'GET', 'path': '/', ...}
 ```
+
+- 设置 `Config.LOG_RETENTION_DAYS` 为正整数（例如 `7`）时，会在写入日志时自动删除早于该天数的旧日志文件。
 
 ## 🤝 贡献指南
 
