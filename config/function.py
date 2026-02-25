@@ -268,6 +268,9 @@ def remote_addr():
     if request.headers.get('CF-Connecting-IP'):
         return request.headers.get('CF-Connecting-IP')
 
+    if request.headers.get('X-Real-IP'):
+        return request.headers.get('X-Real-IP')
+
     if request.headers.get('X-Forwarded-For'):
         return request.headers.get('X-Forwarded-For').split(',')[0].strip()
 
