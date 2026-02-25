@@ -1,4 +1,4 @@
-# PyServe Python Functions Technical Reference (.pys)
+# DinoWebServe Python Functions Technical Reference (.pys)
 
 This page documents the Python functions available in `.pys` dynamic pages, including behavior, return values, edge cases, and examples.
 
@@ -17,7 +17,7 @@ This page documents the Python functions available in `.pys` dynamic pages, incl
 
     ```html
     <python>
-    print("Hello,", "PyServe")
+    print("Hello,", "DinoWebServe")
     </python>
     ```
 
@@ -137,6 +137,6 @@ echo(f"<p>Is JSON: {is_json()}</p>")
 - Proxies & real IP: In multi-proxy setups, `X-Forwarded-For` uses the first IP; ensure trusted proxy chain.
 
 ## References
-- Function implementations & configuration: [function.py](file:///d:/Users/felix/Desktop/PyServe/PyServe/config/function.py)
-- Server execution environment & injection: [PyServe.py](file:///d:/Users/felix/Desktop/PyServe/PyServe/PyServe.py)
+- Function implementations & configuration: [function.py](./config/function.py)
+- Server execution environment & injection: [DinoWebServe.py](./DinoWebServe.py)
 

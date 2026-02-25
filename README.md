@@ -1,4 +1,4 @@
-# <img src="pyserve.png" alt="icon" width="50" align="center"> PyServe
+# <img src="pyserve.png" alt="icon" width="50" align="center"> DinoWebServe
 
 <div align="left">
   <a href="README_ZH.md">中文</a> | <a href="README.md">English</a>
@@ -38,8 +38,8 @@ pip install flask colorama
 ### 2. Project Structure
 
 ```
-PyServe/
-├── PyServe.py      # Main program file
+DinoWebServe/
+├── DinoWebServe.py      # Main program file
 ├── config/
 │   └── config.cfg      # Configuration file
 ├── WWW/                # Web root directory
@@ -54,7 +54,7 @@ PyServe/
 ### 3. Run the Server
 
 ```bash
-python PyServe.py
+python DinoWebServe.py
 ```
 
 The server starts on port 80 by default. Visit http://localhost to access.
@@ -94,6 +94,28 @@ DISABLE_PYTHON_FUNCTIONS = []  # Disabled functions
 ENABLE_PYTHON_LIBRARIES = ['sys', 'os', 'math', 'datetime', 'time', 'json', ...]  # Allowed libraries
 ```
 
+### Host Mapping & Reverse Proxy (New)
+
+When `Config.WWW_ROOT` is a `dict`, the server routes by `Host` to different sites. If a mapped value starts with `http`, the request is forwarded to the upstream as a reverse proxy with streaming response.
+
+- Host-based routing: `Config.WWW_ROOT[request.host]` matches a static directory or an upstream address
+- Fallback rule: use key `ELSE` to specify a default site
+- Upstream proxy: values starting with `http` forward requests to the upstream (no auto-follow for redirects)
+
+Example configuration:
+
+```python
+Config.WWW_ROOT = {
+    "www.example.com": "D:/sites/example",         # Static directory
+    "api.example.com": "http://127.0.0.1:9000",    # Reverse proxy to upstream
+    "ELSE": "D:/sites/default"                     # Fallback site
+}
+```
+
+Notes:
+
+- Ensure the upstream validates and properly handles `X-Real-IP`/`X-Forwarded-*` headers
+
 ## 🎯 Usage Examples
 
 ### Dynamic Pages Support
@@ -106,7 +128,7 @@ Create `WWW/index.pys` file:
 <!DOCTYPE html>
 <html>
 <body>
-    <h1>Welcome to PyServe</h1>
+    <h1>Welcome to DinoWebServe</h1>
     <python>
 echo("<p>Current time: " + str(datetime.datetime.now()) + "</p>")
 echo("<p>Your IP address: " + remote_addr() + "</p>")
@@ -137,7 +159,7 @@ echo("<p>Python says: Current timestamp is " + str(time.time()) + "</p>")
 
 ### Available Python Functions
 
-- Full technical reference: [FUNCTIONS.md](file:///d:/Users/felix/Desktop/PyServe/PyServe/FUNCTIONS.md)
+- Full technical reference: [FUNCTIONS.md](./FUNCTIONS.md)
 
 ## 🔒 Security Considerations
 

@@ -1,4 +1,4 @@
-# <img src="pyserve.png" alt="icon" width="50" align="center"> PyServe
+# <img src="pyserve.png" alt="icon" width="50" align="center"> DinoWebServe
 
 <div align="left">
   <a href="README_ZH.md">中文</a> | <a href="README.md">English</a>
@@ -38,8 +38,8 @@ pip install flask colorama
 ### 2. 项目结构
 
 ```
-PyServe/
-├── PyServe.py      # 主程序文件
+DinoWebServe/
+├── DinoWebServe.py      # 主程序文件
 ├── config/
 │   └── config.cfg      # 配置文件
 ├── WWW/                # Web 根目录
@@ -54,7 +54,7 @@ PyServe/
 ### 3. 运行服务器
 
 ```bash
-python PyServe.py
+python DinoWebServe.py
 ```
 
 服务器默认在 80 端口启动，访问 http://localhost 即可。
@@ -94,6 +94,28 @@ DISABLE_PYTHON_FUNCTIONS = []  # 禁用的函数
 ENABLE_PYTHON_LIBRARIES = ['sys', 'os', 'math', 'datetime', 'time', 'json', ...]  # 允许导入的库
 ```
 
+### 多主机映射与反向代理（新增）
+
+当 `Config.WWW_ROOT` 配置为 `dict` 时，服务器支持按 `Host` 路由到不同站点；当映射值以 `http` 开头时，将作为上游反向代理进行请求转发并保持流式响应。
+
+- 按主机名路由：`Config.WWW_ROOT[request.host]` 命中静态目录或上游地址
+- 兜底规则：可使用键 `ELSE` 指定默认站点
+- 上游代理：值以 `http` 开头时，转发请求到对应上游（不跟随重定向）
+
+示例配置：
+
+```python
+Config.WWW_ROOT = {
+    "www.example.com": "D:/sites/example",          # 静态目录
+    "api.example.com": "http://127.0.0.1:9000",     # 反向代理到上游
+    "ELSE": "D:/sites/default"                      # 兜底站点
+}
+```
+
+注意事项：
+
+- 请确保上游信任并正确处理 `X-Real-IP`/`X-Forwarded-*` 头
+
 ## 🎯 使用示例
 
 ### 动态页面支持
@@ -106,7 +128,7 @@ ENABLE_PYTHON_LIBRARIES = ['sys', 'os', 'math', 'datetime', 'time', 'json', ...]
 <!DOCTYPE html>
 <html>
 <body>
-    <h1>欢迎访问 PyServe</h1>
+    <h1>欢迎访问 DinoWebServe</h1>
     <python>
 echo("<p>当前时间：" + str(datetime.datetime.now()) + "</p>")
 echo("<p>您的 IP 地址：" + remote_addr() + "</p>")
@@ -137,7 +159,7 @@ echo("<p>Python 说：当前时间戳是 " + str(time.time()) + "</p>")
 
 ### 可用的 Python 函数
 
-- 完整技术说明： [FUNCTIONS_ZH.md](file:///d:/Users/felix/Desktop/PyServe/PyServe/FUNCTIONS_ZH.md)
+- 完整技术说明： [FUNCTIONS_ZH.md](./FUNCTIONS_ZH.md)
 
 ## 🔒 安全考虑
 

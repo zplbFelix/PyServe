@@ -1,4 +1,4 @@
-# PyServe 可用 Python 函数技术文档（.pys）
+# DinoWebServe 可用 Python 函数技术文档（.pys）
 
 本页详细介绍在 `.pys` 动态页面中可使用的 Python 函数、其行为、返回值、边界情况与示例。
 
@@ -16,7 +16,7 @@
   - 示例：
     ```html
     <python>
-    print("Hello,", "PyServe")
+    print("Hello,", "DinoWebServe")
     </python>
     ```
 
@@ -130,6 +130,6 @@ echo(f"<p>是否 JSON：{is_json()}</p>")
 - 代理与真实 IP：在多层代理环境下，`X-Forwarded-For` 取首个地址；请确保代理链可信
 
 ## 参考
-- 函数实现与配置：[function.py](file:///d:/Users/felix/Desktop/PyServe/PyServe/config/function.py)
-- 服务器执行环境与注入： [PyServe.py](file:///d:/Users/felix/Desktop/PyServe/PyServe/PyServe.py)
+- 函数实现与配置：[function.py](./config/function.py)
+- 服务器执行环境与注入： [DinoWebServe.py](./DinoWebServe.py)
 
